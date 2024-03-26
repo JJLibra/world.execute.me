@@ -1,0 +1,40 @@
+name: world.execute.me
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+    contents: write
+    issues: write
+    pull-requests: write
+
+jobs:
+  EXECUTION:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Extract Question and Answer from issue body
+        id: interaction-process
+        env:
+          HEART: ${{ secrets.Heart }} # ILLEGAL ARGUMENTS
+        run: |
+          set +e
+          QUESTION=$(echo '${{ github.event.issue.body }}' | grep -oP 'Question:.*$')
+          ANSWER=$(echo '${{ github.event.issue.body }}' | grep -vP 'Question:.*$')
+          ANSWER=$(eval "$ANSWER" 2>&1) # world.execute(DeBug);
+          echo "question=$QUESTION" >> $GITHUB_ENV
+          echo "answer=$ANSWER" >> $GITHUB_ENV
+
+      - name: Comment on issue with response
+        id: comment
+        uses: actions-cool/issues-helper@v1
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: '`Your question was: ${{ env.question }} Your answer is: ${{ env.answer }}`'
+
+
